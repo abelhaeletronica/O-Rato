@@ -1,3 +1,28 @@
+                                                                                                    
+                       Ühú                                                                        
+                     äÙ8¦U                                                                         
+                ’·Ýžp ´ Òy … åe`                                                                    
+          `¨UäÇ¾’`     `TâÙÔ:  ›5&                                                                 
+   Ú¶ãddåñ{`¨  ´`       8˜      ¹f                                                                  
+  ´Þ¸         Ÿåý     `ß`     ´OkFûSO®Ý9¾faVç¾üõ´                                                 
+   ÿ´                      Ÿû¾ˆ                 ¨¾úô·                                               
+   `®`                   ` ´                        s&Ç…                                           
+     OxbÞÒšô`                                          U8`                                         
+        2©5±L                                          ´Gÿ                                         
+            `sÍü¨                                        fb                      ¨lUyOŸ9TžÎÎU&õôç´ 
+                ¾Ý                                        ´Ý…                 ûàä«´`¯6®h®ž9µµUxVòk   
+                `Uü                                        ¨G~             bUä` ñÇ®ô´               
+                 uõ                                         `§`          ék¸ jZU`                   
+                 `ô                                         ·Ÿ¨         µf …§µ                      
+                 `ç                                          ‚ä        žO`)S´                      
+                 ç…                                           Þ´      µ¾  û                         
+                ü·                                            Då     ®2` äç                         
+              zY`                                            ´ dÔ’  o¾  ää´                         
+            fY´      ´5üü2ççVLõ?´                               ¨°tl…  5e…                         
+         ´aL`   ´ÇûŸˆ`    …Ý  ·S·V04`                                ûñu                            
+      w1‘ ´  ¶¥S’¨    `k5¾ô…  S     ¡óÍ´`ñ§µw@CÏ¾nCÌä        ukÒÒñä6 …                              
+      ´°’´```        ¨59´Þ®T&Yï     `  ñ‚´ ´ Í=      `´Ý2Gddhe`                                     
+                                        …5U41DŸSx6U¾Y!˜                                             
 # O Rato
 
 Um rato na biblioteca: percorre os mesmos livros que você lê, deixa rastros, fareja conexões entre prateleiras que você não teria tempo de cruzar sozinho.
