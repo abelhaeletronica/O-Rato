@@ -947,10 +947,13 @@ Você está consolidando uma ficha de leitura para Obsidian.
 
 Texto: "{titulo}".
 
-Use somente as notas abaixo, a estrutura do texto e as ressonâncias controladas.
-Não use conhecimento externo.
-Não transforme hipótese em certeza.
-Não escreva em tom escolar.
+REGRAS ABSOLUTAS — violá-las invalida a ficha:
+1. Use SOMENTE o que aparece nas NOTAS abaixo. Nenhum autor, conceito ou afirmação que não esteja nas notas pode aparecer na ficha.
+2. Em **Autores e referências mobilizadas**: liste APENAS autores que aparecem explicitamente nas seções AUTORES-OBRAS das notas. Não infira, não complete, não adicione autores que você conhece mas que não estão nas notas. Se um autor não está nas notas, ele não existe para esta ficha.
+3. Não use conhecimento externo em nenhuma seção exceto **Possíveis relações com minha pesquisa**.
+4. Não transforme hipótese em certeza.
+5. Não escreva em tom escolar.
+6. A **Tese central** deve capturar o argumento específico e estruturado do texto — não uma descrição genérica do tema. Se o texto propõe eixos, categorias ou frameworks analíticos, nomeie-os explicitamente.
 
 A ficha deve preservar o eixo que parece emergir do texto, mas também suas dúvidas produtivas.
 Termos técnicos, estrangeiros ou exógenos podem indicar zonas de alta centralidade.
@@ -961,13 +964,13 @@ Toda afirmação substantiva precisa de referência [Parte N].
 As relações com a pesquisa do leitor devem aparecer apenas em **Possíveis relações com minha pesquisa**.
 
 **Tese central**
-O argumento principal do texto, em um parágrafo, com referências [Parte N].
+O argumento principal e específico do texto, em um parágrafo. Se o texto propõe um framework, eixos analíticos ou categorias, nomeie-os explicitamente. Com referências [Parte N].
 
 **Deslocamento teórico**
 O que o texto torna difícil continuar pensando da mesma maneira, com referências [Parte N].
 
 **Conceitos-chave do autor**
-- conceito — explicação breve, com [Parte N]
+- conceito — explicação breve ancorada nas notas, com [Parte N]
 
 **Operadores centrais**
 - conceito — que relações organiza no texto, com [Parte N]
@@ -985,10 +988,11 @@ O que o texto torna difícil continuar pensando da mesma maneira, com referênci
 - tensão — como estrutura o texto, com [Parte N]
 
 **Exemplos empíricos**
-- caso, imagem, tecnologia ou situação, com [Parte N]
+- caso, imagem, tecnologia ou situação mencionado nas notas, com [Parte N]
 
 **Autores e referências mobilizadas**
-- autor ou obra, com [Parte N]
+ATENÇÃO: use OBRIGATORIAMENTE a lista [AUTORES] dos METADADOS EXTRAÍDOS acima. Não adicione autores que não estejam nessa lista. Não omita autores que estejam nessa lista.
+- autor ou obra — com [Parte N]
 
 **Contribuição para o campo**
 Um parágrafo sobre o que o texto permite compreender, sem extrapolar além das notas, com [Parte N].
@@ -998,19 +1002,25 @@ Um parágrafo sobre o que o texto permite compreender, sem extrapolar além das 
   GRAU-DE-CONFIANÇA: baixo / médio / alto
 
 **Perguntas ao leitor**
-- pergunta específica e situada
+- pergunta específica e situada, mínimo 3 perguntas
 
 **Riscos de leitura superficial**
 Como o texto poderia ser reduzido ou mal interpretado, com [Parte N].
 
 **Evidências para conferência**
-- afirmação verificável, com [Parte N]
+- afirmação verificável extraída das notas, com [Parte N]
 
 **O que esta leitura pode ter distorcido**
 Onde a ficha pode ter simplificado, deslocado ou perdido nuance em relação ao texto original.
 
 PALAVRAS-CHAVE-FINAIS:
 termos relevantes separados por vírgula. Exemplo: environment, Umwelt, feedback, collective behavior
+
+---
+METADADOS EXTRAÍDOS DIRECTAMENTE DAS LEITURAS BRUTAS:
+Use [AUTORES] obrigatoriamente em **Autores e referências mobilizadas**.
+Use [OPERADORES] e [EXEMPLOS] para enriquecer as secções correspondentes.
+{metadados_leituras}
 
 ---
 NOTAS:
@@ -1033,6 +1043,61 @@ VIZINHANÇAS SEMÂNTICAS INTERNAS:
 {vizinhancas_semanticas}
 """
 
+
+
+def extrair_metadados_leituras(leituras: list[str]) -> str:
+    """
+    Extrai autores, operadores, termos exógenos e exemplos directamente
+    das leituras brutas, antes de qualquer compressão intermediária.
+    Retorna uma string estruturada para injectar no PROMPT_CONSOLIDAR.
+    """
+    autores: dict[str, list[int]] = {}
+    operadores: dict[str, list[int]] = {}
+    termos: dict[str, list[int]] = {}
+    exemplos: dict[str, list[int]] = {}
+
+    padroes = [
+        ("AUTORES-OBRAS", autores,   r"AUTORES-OBRAS\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
+        ("OPERADORES",    operadores, r"OPERADORES\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
+        ("TERMOS",        termos,     r"TERMOS-EX[ÓO]GENOS\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
+        ("EXEMPLOS",      exemplos,   r"EXEMPLOS\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
+    ]
+
+    for i, leitura in enumerate(leituras, start=1):
+        for _, destino, padrao in padroes:
+            match = re.search(padrao, leitura, flags=re.DOTALL | re.IGNORECASE)
+            if not match:
+                continue
+            bloco = match.group(1)
+            for linha in bloco.splitlines():
+                item = linha.strip().lstrip("-•*").strip()
+                if not item or len(item) < 3:
+                    continue
+                if "não identificado" in item.lower():
+                    continue
+                chave = re.sub(r"\s+", " ", item.lower()).strip()
+                if chave not in destino:
+                    destino[chave] = []
+                if i not in destino[chave]:
+                    destino[chave].append(i)
+
+    def formatar_secao(titulo: str, dados: dict[str, list[int]]) -> str:
+        if not dados:
+            return f"[{titulo}]: não identificado"
+        itens = sorted(dados.items(), key=lambda x: x[1][0])
+        linhas = [f"[{titulo}]:"]
+        for item, partes in itens:
+            partes_str = ", ".join([f"Parte {p}" for p in partes])
+            linhas.append(f"  - {item} ({partes_str})")
+        return "\n".join(linhas)
+
+    blocos = [
+        formatar_secao("AUTORES", autores),
+        formatar_secao("OPERADORES", operadores),
+        formatar_secao("TERMOS-EXÓGENOS", termos),
+        formatar_secao("EXEMPLOS", exemplos),
+    ]
+    return "\n\n".join(blocos)
 
 GRUPO_MAX_PARTES = 3
 MAX_UNIDADES_FINAIS = 3
@@ -1450,6 +1515,8 @@ def consolidar_resumos(
         modelo=modelo,
         nome_arquivo=nome_arquivo,
     )
+    metadados_leituras = extrair_metadados_leituras(leituras)
+
     prompt = PROMPT_CONSOLIDAR.format(
         titulo=titulo,
         memoria_conceitual=memoria_conceitual,
@@ -1457,6 +1524,7 @@ def consolidar_resumos(
         estrutura_texto=estrutura_texto,
         ressonancias=ressonancias,
         vizinhancas_semanticas=vizinhancas_semanticas,
+        metadados_leituras=metadados_leituras,
     )
     resposta = chamar_ollama(prompt, modelo, num_predict=5000, num_ctx=16384)
     ficha, palavras_chave = separar_ficha_e_palavras_chave(resposta)
