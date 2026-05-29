@@ -2,7 +2,18 @@
 
 Um rato na biblioteca: percorre os mesmos livros que você lê, deixa rastros, fareja conexões entre prateleiras que você não teria tempo de cruzar sozinho.
 
-Pipeline local para converter PDFs acadêmicos em fichas de leitura estruturadas para Obsidian, usando Ollama como motor de linguagem.
+O Rato é um sistema local de leitura acadêmica que combina modelos de linguagem, embeddings semânticos e memória conceitual para apoiar a análise de textos longos.
+
+Diferentemente de ferramentas focadas em resumo ou recuperação de informação, o projeto procura preservar recorrências distribuídas, tensões conceituais e relações semânticas que atravessam múltiplos textos.
+
+Atualmente o sistema organiza seu trabalho em quatro operações principais:
+
+- **Caçar** — converter, limpar e catalogar documentos;
+- **Roer** — produzir leituras, fichas e memória conceitual;
+- **Farejar** — explorar vizinhanças e recorrências semânticas;
+- **Cuidar** — manter e corrigir a memória acumulada da biblioteca.
+
+O projeto é local-first e utiliza Ollama para execução dos modelos.
 
 ---
 

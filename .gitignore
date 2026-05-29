@@ -6,6 +6,7 @@
 
 # Exclude Markdown files
 *.md
+!README.md
 
 # Exclude common system files
 .DS_Store
