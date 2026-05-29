@@ -21,3 +21,4 @@
 *.swo
 *~
 .cache/
+*.tsv
