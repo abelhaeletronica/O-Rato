@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RATO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ROOT_DIR="$(cd "$RATO_DIR/.." && pwd)"
+PYTHON_BIN="${PYTHON:-python3}"
+
+ROER="$RATO_DIR/scripts/roer.py"
+FAREJAR="$RATO_DIR/scripts/farejar.py"
+TECER="$RATO_DIR/scripts/tecer.py"
+CONVERTER="$RATO_DIR/scripts/converter.py"
+CUIDAR_MEMORIA="$RATO_DIR/scripts/cuidar_memoria.py"
+LIMPAR="$RATO_DIR/scripts/limpar.py"
+CATALOGAR="$RATO_DIR/scripts/catalogar.py"
+
+MODELO_LEITURA="${RATO_MODELO_LEITURA:-qwen2.5:7b}"
+MODELO_FICHA="${RATO_MODELO_FICHA:-qwen3:8b}"
+MODELO_EMBEDDING="${RATO_MODELO_EMBEDDING:-nomic-embed-text}"
+
+cd "$ROOT_DIR"
+
+uso() {
+  cat <<'EOF'
+Rato - atalhos para a biblioteca de pesquisa
+
+Uso:
+  ./rato/bin/rato <comando> [argumentos]
+
+Atalho na raiz da biblioteca:
+  ./rato.sh <comando> [argumentos]
+
+Comandos principais:
+  indexar [arquivo.md] [opções]     Leitura bruta + embeddings, sem ficha final
+  fichar <arquivo.md> [opções]      Gera ficha a partir de leitura bruta existente
+  completo <arquivo.md> [opções]    Leitura + embeddings + ficha final
+  farejar <consulta> [opções]       Fareja rastros textuais na biblioteca
+  tecer <consulta> [opções]         Tece relações semânticas por embeddings
+
+Manutenção:
+  converter <pdf-ou-pasta> [opções] Converte PDF(s) para Markdown com Docling
+  catalogar <arquivo/pasta> [opções] Gera YAML bibliográfico para Markdown
+  cuidar-memoria [opções]           Higieniza e normaliza a memória conceitual
+  corrigir-memoria [opções]         Aplica correções manuais na memória
+  biblioteca-indexar [opções]       Indexa Markdown no banco textual local
+  memoria-limpar [opções]           Alias antigo de cuidar-memoria
+  memoria-corrigir [opções]         Alias antigo de corrigir-memoria
+  limpar-ocr <arquivo.md> [opções]  Limpa OCR de um arquivo Markdown
+
+Exemplos:
+  ./rato.sh indexar kirci-phenomenology-and-space-in-architecture.md
+  ./rato.sh fichar kirci-phenomenology-and-space-in-architecture.md
+  ./rato.sh completo jackson-rethinking-repair-media.md --forcar
+  ./rato.sh catalogar adorno-notas-de-literatura-i.md
+  ./rato.sh converter artigo.pdf --saida .
+  ./rato.sh cuidar-memoria
+  ./rato.sh corrigir-memoria
+  ./rato.sh farejar "cuidado matéria gesto"
+  ./rato.sh tecer "cuidado como manutenção de relações materiais"
+
+Variáveis opcionais:
+  RATO_MODELO_LEITURA=qwen2.5:7b
+  RATO_MODELO_FICHA=qwen3:8b
+  RATO_MODELO_EMBEDDING=nomic-embed-text
+  PYTHON=python3
+EOF
+}
+
+arquivo_arg() {
+  local primeiro="${1:-}"
+  [[ -n "$primeiro" && "$primeiro" != -* ]]
+}
+
+rodar_roer() {
+  local modo="$1"
+  local exige_alvo="$2"
+  shift 2
+
+  local arquivo=""
+  if arquivo_arg "${1:-}"; then
+    arquivo="$1"
+    shift
+  fi
+
+  if [[ "$exige_alvo" == "sim" && -z "$arquivo" && "${1:-}" != "--help" && "${1:-}" != "-h" ]]; then
+    echo "Erro: o comando '$modo' precisa de um arquivo .md." >&2
+    echo "Exemplo: ./rato.sh $modo jackson-rethinking-repair-media.md" >&2
+    exit 2
+  fi
+
+  local cmd=(
+    "$PYTHON_BIN" "$ROER"
+    --modo "$modo"
+    --pasta .
+    --saida fichas
+    --leituras leituras-brutas
+    --memoria "$RATO_DIR/memoria/memoria-conceitos.json"
+    --modelo "$MODELO_LEITURA"
+    --modelo-embedding "$MODELO_EMBEDDING"
+    --modelo-consolidacao "$MODELO_FICHA"
+  )
+
+  if [[ -n "$arquivo" ]]; then
+    cmd+=(--arquivo "$arquivo")
+  fi
+
+  cmd+=("$@")
+  "${cmd[@]}"
+}
+
+comando="${1:-ajuda}"
+if [[ $# -gt 0 ]]; then
+  shift
+fi
+
+case "$comando" in
+  ajuda|help|-h|--help)
+    uso
+    ;;
+  indexar)
+    rodar_roer indexar nao "$@"
+    ;;
+  fichar)
+    rodar_roer fichar sim "$@"
+    ;;
+  completo)
+    rodar_roer completo sim "$@"
+    ;;
+  converter)
+    "$PYTHON_BIN" "$CONVERTER" "$@"
+    ;;
+  catalogar)
+    "$PYTHON_BIN" "$CATALOGAR" "$@"
+    ;;
+  farejar)
+    if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+      "$PYTHON_BIN" "$FAREJAR" farejar --help
+      exit 0
+    fi
+    "$PYTHON_BIN" "$FAREJAR" farejar "$@"
+    ;;
+  biblioteca-indexar)
+    "$PYTHON_BIN" "$FAREJAR" indexar --pasta . "$@"
+    ;;
+  biblioteca)
+    "$PYTHON_BIN" "$FAREJAR" "$@"
+    ;;
+  tecer)
+    if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+      "$PYTHON_BIN" "$TECER" --help
+      exit 0
+    fi
+    if [[ $# -eq 0 ]]; then
+      echo "Erro: informe uma consulta." >&2
+      echo 'Exemplo: ./rato.sh tecer "cuidado como manutenção de relações materiais"' >&2
+      exit 2
+    fi
+    consulta="$1"
+    shift
+    "$PYTHON_BIN" "$TECER" \
+      --consulta "$consulta" \
+      --embeddings .embeddings \
+      --saida relacoes \
+      --modelo-embedding "$MODELO_EMBEDDING" \
+      --modelo "$MODELO_FICHA" \
+      "$@"
+    ;;
+  memoria-limpar)
+    "$PYTHON_BIN" "$CUIDAR_MEMORIA" "$@"
+    ;;
+  cuidar-memoria)
+    "$PYTHON_BIN" "$CUIDAR_MEMORIA" "$@"
+    ;;
+  memoria-corrigir)
+    "$PYTHON_BIN" "$CUIDAR_MEMORIA" --aplicar-correcoes "$@"
+    ;;
+  corrigir-memoria)
+    "$PYTHON_BIN" "$CUIDAR_MEMORIA" --aplicar-correcoes "$@"
+    ;;
+  limpar-ocr)
+    "$PYTHON_BIN" "$LIMPAR" "$@"
+    ;;
+  *)
+    echo "Comando desconhecido: $comando" >&2
+    echo >&2
+    uso >&2
+    exit 2
+    ;;
+esac

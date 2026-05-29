@@ -1,0 +1,31 @@
+# autores.yaml — mapeamento slug → nome canónico
+# Adicione entradas no formato:  slug: Nome Completo
+# O slug é o primeiro token do nome do ficheiro (antes do primeiro hífen ou underscore).
+
+adorno: Theodor W. Adorno
+agamben: Giorgio Agamben
+barad: Karen Barad
+bellacasa: María Puig de la Bellacasa
+benjamin: Walter Benjamin
+bergson: Henri Bergson
+bourgeois: Louise Bourgeois
+deleuze: Gilles Deleuze
+guattari: Félix Guattari
+haraway: Donna Haraway
+ingold: Tim Ingold
+jackson: Steven J. Jackson
+krauss: Rosalind Krauss
+merleau-ponty: Maurice Merleau-Ponty
+nisbispo: Antônio Bispo do Nascimento
+nussbaum: Martha Nussbaum
+puig: María Puig de la Bellacasa
+simondon: Gilbert Simondon
+tostes: Celeida Tostes
+verdesio: Gustavo Verdesio
+winnicott: Donald W. Winnicott
+
+# Pares de autores compostos (dois primeiros tokens do ficheiro)
+# Formato:  "token1 token2": Nome 1; Nome 2
+_compostos:
+  abraham shaw: Ralph H. Abraham; Christopher D. Shaw
+  alcindor correia: Mónica Alcindor; Mariana Correia

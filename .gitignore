@@ -1,0 +1,19 @@
+# Exclude JSON files
+*.json
+
+# Exclude PDF files
+*.pdf
+
+# Exclude Markdown files
+*.md
+
+# Exclude common system files
+.DS_Store
+.env
+.env.local
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cache/
