@@ -4,6 +4,9 @@
 # Exclude PDF files
 *.pdf
 
+# Exclude tsv files
+*.tsv
+
 # Exclude Markdown files
 *.md
 !README.md

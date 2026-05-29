@@ -382,3 +382,79 @@ O script:
 - salva um `.md` interpretativo na pasta indicada em `--saida`.
 
 Isso permite tecer aproximações conceituais entre autores mesmo quando eles não usam o mesmo vocabulário explícito.
+
+# Scripts - O Rato
+
+Coleção de scripts utilitários para processamento de arquivos markdown.
+
+## `converter_notas.py`
+
+### O que faz?
+
+Converte notas de rodapé de arquivos markdown convertidos de PDF para o formato padrão markdown com referências footnote.
+
+**Transforma:**
+```
+Texto com referência 1 .
+
+- 1  Definição da nota um
+```
+
+**Em:**
+```
+Texto com referência[^1].
+
+## Notas de Rodapé
+
+[^1]: Definição da nota um
+```
+
+### Recursos
+
+- ✅ **Pareamento automático**: primeira ocorrência de número = referência, segunda = definição
+- ✅ **Múltiplos padrões suportados**:
+  - Definições com traço: `- 4  Texto...`
+  - Definições sem traço: `8  Texto...`
+  - Referências antes de ponto: ` 4 .` → `[^4].`
+  - Referências antes de vírgula: ` 4 ,` → `[^4],`
+  - Referências gerais: `palavra 4` → `palavra[^4]`
+- ✅ **Preserva original**: gera novo arquivo com sufixo `-notas`
+- ✅ **Agrupa definições**: todas as notas ficam em seção `## Notas de Rodapé` no final
+
+### Como usar
+
+#### Um arquivo por vez:
+```bash
+python3 script/converter_notas.py arquivo.md
+```
+
+Gera: `arquivo-notas.md`
+
+#### Vários arquivos:
+```bash
+python3 script/converter_notas.py arquivo1.md arquivo2.md arquivo3.md
+```
+
+Gera: `arquivo1-notas.md`, `arquivo2-notas.md`, `arquivo3-notas.md`
+
+#### Todos os .md da pasta:
+```bash
+cd /Volumes/Documentos\ HD/Documento\ HD/Meu\ Trabalho/Estudos\ Acadêmicos/o-rato
+python3 script/converter_notas.py *.md
+```
+
+### Exemplo
+
+```bash
+$ python3 script/converter_notas.py alcindor-correia-new-tools.md
+✓ alcindor-correia-new-tools-notas.md
+```
+
+O arquivo original permanece intacto. O novo arquivo `-notas.md` contém todo o texto com as notas convertidas para o formato markdown padrão.
+
+### Saída
+
+Arquivo processado com:
+- Referências convertidas para `[^n]` inline
+- Definições agrupadas em seção `## Notas de Rodapé` no final
+- Arquivo original preservado
