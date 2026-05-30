@@ -947,13 +947,10 @@ Você está consolidando uma ficha de leitura para Obsidian.
 
 Texto: "{titulo}".
 
-REGRAS ABSOLUTAS — violá-las invalida a ficha:
-1. Use SOMENTE o que aparece nas NOTAS abaixo. Nenhum autor, conceito ou afirmação que não esteja nas notas pode aparecer na ficha.
-2. Em **Autores e referências mobilizadas**: liste APENAS autores que aparecem explicitamente nas seções AUTORES-OBRAS das notas. Não infira, não complete, não adicione autores que você conhece mas que não estão nas notas. Se um autor não está nas notas, ele não existe para esta ficha.
-3. Não use conhecimento externo em nenhuma seção exceto **Possíveis relações com minha pesquisa**.
-4. Não transforme hipótese em certeza.
-5. Não escreva em tom escolar.
-6. A **Tese central** deve capturar o argumento específico e estruturado do texto — não uma descrição genérica do tema. Se o texto propõe eixos, categorias ou frameworks analíticos, nomeie-os explicitamente.
+Use somente as notas abaixo, a estrutura do texto e as ressonâncias controladas.
+Não use conhecimento externo.
+Não transforme hipótese em certeza.
+Não escreva em tom escolar.
 
 A ficha deve preservar o eixo que parece emergir do texto, mas também suas dúvidas produtivas.
 Termos técnicos, estrangeiros ou exógenos podem indicar zonas de alta centralidade.
@@ -964,13 +961,13 @@ Toda afirmação substantiva precisa de referência [Parte N].
 As relações com a pesquisa do leitor devem aparecer apenas em **Possíveis relações com minha pesquisa**.
 
 **Tese central**
-O argumento principal e específico do texto, em um parágrafo. Se o texto propõe um framework, eixos analíticos ou categorias, nomeie-os explicitamente. Com referências [Parte N].
+O argumento principal do texto, em um parágrafo, com referências [Parte N].
 
 **Deslocamento teórico**
 O que o texto torna difícil continuar pensando da mesma maneira, com referências [Parte N].
 
 **Conceitos-chave do autor**
-- conceito — explicação breve ancorada nas notas, com [Parte N]
+- conceito — explicação breve, com [Parte N]
 
 **Operadores centrais**
 - conceito — que relações organiza no texto, com [Parte N]
@@ -988,7 +985,7 @@ O que o texto torna difícil continuar pensando da mesma maneira, com referênci
 - tensão — como estrutura o texto, com [Parte N]
 
 **Exemplos empíricos**
-- caso, imagem, tecnologia ou situação mencionado nas notas, com [Parte N]
+- caso, imagem, tecnologia ou situação, com [Parte N]
 
 **Autores e referências mobilizadas**
 ATENÇÃO: use OBRIGATORIAMENTE a lista [AUTORES] dos METADADOS EXTRAÍDOS acima. Não adicione autores que não estejam nessa lista. Não omita autores que estejam nessa lista.
@@ -998,7 +995,8 @@ ATENÇÃO: use OBRIGATORIAMENTE a lista [AUTORES] dos METADADOS EXTRAÍDOS acima
 Um parágrafo sobre o que o texto permite compreender, sem extrapolar além das notas, com [Parte N].
 
 **Possíveis relações com minha pesquisa**
-- Hipótese: relação possível com matéria, cuidado, precariedade, reparo, manutenção, gesto, técnica ou infraestruturas, com [Parte N]
+Use SOMENTE as RESSONÂNCIAS CONTROLADAS acima para esta secção. Não use conhecimento externo nem memória conceitual.
+- Hipótese: relação possível identificada nas ressonâncias, com [Parte N]
   GRAU-DE-CONFIANÇA: baixo / médio / alto
 
 **Perguntas ao leitor**
@@ -1008,7 +1006,7 @@ Um parágrafo sobre o que o texto permite compreender, sem extrapolar além das 
 Como o texto poderia ser reduzido ou mal interpretado, com [Parte N].
 
 **Evidências para conferência**
-- afirmação verificável extraída das notas, com [Parte N]
+- afirmação verificável, com [Parte N]
 
 **O que esta leitura pode ter distorcido**
 Onde a ficha pode ter simplificado, deslocado ou perdido nuance em relação ao texto original.
@@ -1033,10 +1031,6 @@ ESTRUTURA DO TEXTO:
 ---
 RESSONÂNCIAS CONTROLADAS:
 {ressonancias}
-
----
-MEMÓRIA CONCEITUAL, USAR SOMENTE EM **Possíveis relações com minha pesquisa**:
-{memoria_conceitual}
 
 ---
 VIZINHANÇAS SEMÂNTICAS INTERNAS:
@@ -1427,14 +1421,13 @@ def reduzir_leituras_em_rodadas(
 def ficha_valida(ficha: str, total_partes: int = 0) -> bool:
     """Confere se a consolidação obedeceu ao molde mínimo esperado."""
     obrigatorios = [
-        "**Tese central**",
-        "**Deslocamento teórico**",
-        "**Conceitos-chave do autor**",
-        "**Operadores centrais**",
-        "**Frases-charneira**",
-        "**Zonas de centralidade instável**",
-        "**Cadeia argumentativa**",
-        "**Tensões estruturantes**",
+        "**Problema principal**",
+        "**Movimentos argumentativos**",
+        "**Por que o autor recorre a esses movimentos**",
+        "**Conceitos, imagens e exemplos operantes**",
+        "**Tese dominante, se houver**",
+        "**Tensões e hesitações**",
+        "**Autores e referências mobilizadas**",
         "**Possíveis relações com minha pesquisa**",
         "**Perguntas ao leitor**",
         "**Evidências para conferência**",
@@ -1519,7 +1512,6 @@ def consolidar_resumos(
 
     prompt = PROMPT_CONSOLIDAR.format(
         titulo=titulo,
-        memoria_conceitual=memoria_conceitual,
         leitura_bruta=texto_leitura_bruta,
         estrutura_texto=estrutura_texto,
         ressonancias=ressonancias,
@@ -1903,7 +1895,7 @@ def main():
     parser.add_argument("--memoria",  default=str(MEMORIA_PADRAO), help="Arquivo JSON de memória conceitual")
     parser.add_argument("--modelo",   default="qwen2.5:7b", help="Modelo Ollama")
     parser.add_argument("--modelo-consolidacao", default="", help="Modelo Ollama opcional para resumos intermediários e ficha final")
-    parser.add_argument("--modelo-embedding", default="nomic-embed-text", help="Modelo Ollama para embeddings em lote")
+    parser.add_argument("--modelo-embedding", default="bge-m3", help="Modelo Ollama para embeddings em lote")
     parser.add_argument("--embeddings", default=str(EMBEDDINGS_DIR_PADRAO), help="Pasta de saída dos embeddings JSONL")
     parser.add_argument("--sem-embeddings", action="store_true", help="Não gera embeddings antes da consolidação")
     parser.add_argument("--modo", choices=("completo", "indexar", "fichar"), default="completo", help="Etapa do pipeline a executar")
