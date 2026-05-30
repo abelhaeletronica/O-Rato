@@ -6,6 +6,7 @@ Farejar rastros na biblioteca local
 Uso básico:
     python3 rato/scripts/farejar.py indexar --pasta .
     python3 rato/scripts/farejar.py farejar "reparo manutenção cuidado"
+    python3 rato/scripts/farejar.py farejar
     python3 rato/scripts/farejar.py aprender "Jackson: tratar repair como cuidado material, não só sustentabilidade"
 
 Dependências:
@@ -31,7 +32,9 @@ import yaml
 
 
 DB_PADRAO = Path("rato/biblioteca_referencias.sqlite")
+EMBEDDINGS_DIR_PADRAO = Path(".embeddings")
 OLLAMA_EMBED_URL = "http://localhost:11434/api/embeddings"
+OLLAMA_GENERATE_URL = "http://localhost:11434/api/generate"
 CHUNK_MAX_WORDS = 650
 CHUNK_OVERLAP = 80
 
@@ -155,7 +158,7 @@ def embedding_ollama(texto: str, modelo: str) -> list[float] | None:
         resp = requests.post(
             OLLAMA_EMBED_URL,
             json={"model": modelo, "prompt": texto},
-            timeout=60,
+            timeout=600,
         )
         resp.raise_for_status()
         vetor = resp.json().get("embedding")
@@ -344,6 +347,265 @@ def buscar_semantica(conn: sqlite3.Connection, consulta: str, modelo: str, limit
     return sorted(resultados, key=lambda r: r["score"], reverse=True)[:limite]
 
 
+# ==== Funções para .embeddings/*.jsonl ====
+
+def carregar_chunks_jsonl(embeddings_dir: Path) -> list[dict]:
+    """Carrega chunks previamente indexados em .embeddings/*.jsonl."""
+    if not embeddings_dir.exists():
+        return []
+
+    chunks: list[dict] = []
+    for caminho_jsonl in sorted(embeddings_dir.glob("*.jsonl")):
+        try:
+            with caminho_jsonl.open("r", encoding="utf-8") as f:
+                for linha in f:
+                    linha = linha.strip()
+                    if not linha:
+                        continue
+                    try:
+                        item = json.loads(linha)
+                    except json.JSONDecodeError:
+                        continue
+                    if item.get("texto"):
+                        item.setdefault("arquivo_jsonl", str(caminho_jsonl))
+                        chunks.append(item)
+        except OSError:
+            continue
+    return chunks
+
+
+def buscar_textual_jsonl(embeddings_dir: Path, consulta: str, limite: int) -> list[dict]:
+    chunks = carregar_chunks_jsonl(embeddings_dir)
+    termos = re.findall(r"[\w-]{3,}", consulta.lower(), flags=re.UNICODE)
+    if not termos:
+        return []
+
+    resultados: list[dict] = []
+    for item in chunks:
+        texto = item.get("texto", "")
+        texto_lower = texto.lower()
+        ocorrencias = sum(texto_lower.count(termo) for termo in termos)
+        if ocorrencias > 0:
+            resultados.append(
+                {
+                    "titulo": item.get("titulo") or item.get("arquivo") or Path(item.get("arquivo_jsonl", "")).stem,
+                    "tipo": item.get("tipo", "jsonl"),
+                    "caminho": item.get("arquivo") or item.get("arquivo_jsonl", ""),
+                    "parte": item.get("parte", "?"),
+                    "texto": texto,
+                    "score": float(ocorrencias),
+                }
+            )
+
+    return sorted(resultados, key=lambda r: r["score"], reverse=True)[:limite]
+
+
+def buscar_semantica_jsonl(embeddings_dir: Path, consulta: str, modelo: str, limite: int) -> list[dict]:
+    vetor = embedding_ollama(consulta, modelo)
+    if not vetor:
+        return []
+
+    chunks = carregar_chunks_jsonl(embeddings_dir)
+    resultados: list[dict] = []
+    for item in chunks:
+        embedding = item.get("embedding")
+        if not isinstance(embedding, list):
+            continue
+        score = cosine(vetor, embedding)
+        resultados.append(
+            {
+                "titulo": item.get("titulo") or item.get("arquivo") or Path(item.get("arquivo_jsonl", "")).stem,
+                "tipo": item.get("tipo", "jsonl"),
+                "caminho": item.get("arquivo") or item.get("arquivo_jsonl", ""),
+                "parte": item.get("parte", "?"),
+                "texto": item.get("texto", ""),
+                "score": score,
+            }
+        )
+
+    return sorted(resultados, key=lambda r: r["score"], reverse=True)[:limite]
+
+
+# ==== Funções para leitura crítica interativa e farejada ====
+
+def limpar_slug(texto: str, limite: int = 70) -> str:
+    slug = texto.lower().strip()
+    slug = re.sub(r"[^\w\s-]", "", slug, flags=re.UNICODE)
+    slug = re.sub(r"[\s_]+", "-", slug)
+    slug = re.sub(r"-+", "-", slug).strip("-")
+    return slug[:limite].strip("-") or "farejada"
+
+
+def montar_contexto_para_qwen(resultados: list[dict], max_chars_por_trecho: int = 1400) -> str:
+    blocos: list[str] = []
+    for i, row in enumerate(resultados, start=1):
+        texto = re.sub(r"\s+", " ", row.get("texto", "")).strip()
+        if len(texto) > max_chars_por_trecho:
+            texto = texto[:max_chars_por_trecho].rstrip() + "..."
+        blocos.append(
+            f"RASTRO {i}\n"
+            f"Título: {row.get('titulo', '')}\n"
+            f"Arquivo: {row.get('caminho', '')}\n"
+            f"Parte: {row.get('parte', '?')}\n"
+            f"Tipo: {row.get('tipo', '')}\n"
+            f"Score: {row.get('score', 0):.4f}\n"
+            f"Trecho: {texto}"
+        )
+    return "\n\n---\n\n".join(blocos)
+
+
+def chamar_qwen(prompt: str, modelo: str) -> str:
+    try:
+        resp = requests.post(
+            OLLAMA_GENERATE_URL,
+            json={"model": modelo, "prompt": prompt, "stream": False},
+            timeout=600,
+        )
+        resp.raise_for_status()
+        dados = resp.json()
+        resposta = dados.get("response", "")
+        return resposta.strip()
+    except requests.RequestException as exc:
+        return f"ERRO ao chamar o modelo {modelo}: {exc}"
+
+
+def montar_prompt_farejada(consulta: str, resultados: list[dict]) -> str:
+    contexto = montar_contexto_para_qwen(resultados)
+    return f"""
+Você é o Rato, um assistente de pesquisa que fareja ressonâncias críticas em uma biblioteca acadêmica pessoal.
+
+Consulta do pesquisador:
+{consulta}
+
+Rastros encontrados:
+
+{contexto}
+
+Primeiro construa um mapa dos rastros:
+
+- Agrupe os rastros por proximidade conceitual.
+- Identifique operadores recorrentes.
+- Identifique tensões recorrentes.
+- Explique por que esses trechos podem ter sido encontrados para esta consulta.
+- Não force relações. Quando a conexão for fraca, diga claramente.
+
+Depois faça uma leitura crítica mais livre, mas sem forçar relações.
+
+Que relação conceitual existe entre esses rastros?
+
+Onde há aproximação real e onde há falsa ressonância?
+
+Antes de formular uma hipótese, separe claramente:
+
+## O que os rastros sustentam
+
+Liste apenas relações que aparecem diretamente nos trechos.
+
+## O que é inferência plausível
+
+Liste relações que podem ser pensadas a partir dos trechos, mas que já dependem de interpretação.
+
+## O que seria especulativo demais
+
+Liste relações que pareceriam interessantes, mas que os rastros ainda não sustentam suficientemente.
+
+Depois formule:
+
+## Hipótese emergente
+
+Uma hipótese de pesquisa que poderia emergir deste conjunto, sem transformar toda precariedade em falta, controle ou dominação se os rastros não exigirem isso.
+
+## Pergunta emergente
+
+Escolha a pergunta mais fértil que surgiu durante sua análise.
+
+## Resposta provisória
+
+Tente responder provisoriamente à pergunta emergente usando apenas os rastros apresentados.
+
+## O que permanece aberto?
+
+Indique onde seria necessário investigar mais.
+""".strip()
+
+
+def salvar_farejada(consulta: str, resposta: str, resultados: list[dict], pasta: Path) -> Path:
+    pasta.mkdir(parents=True, exist_ok=True)
+    data = datetime.now().strftime("%Y-%m-%d")
+    slug = limpar_slug(consulta)
+    caminho = pasta / f"farejada-{data}-{slug}.md"
+
+    rastros = []
+    for i, row in enumerate(resultados, start=1):
+        rastros.append(
+            f"{i}. **{row.get('titulo', '')}** — `{row.get('caminho', '')}` · "
+            f"Parte {row.get('parte', '?')} · score={row.get('score', 0):.4f}"
+        )
+
+    conteudo = f"""---
+titulo: "Farejada: {consulta}"
+tipo: farejada
+data: "{data}"
+consulta: "{consulta}"
+modelo: qwen2.5:14b
+---
+
+# Farejada: {consulta}
+
+## Consulta
+
+{consulta}
+
+## Leitura crítica
+
+{resposta}
+
+## Rastros usados
+
+{chr(10).join(rastros)}
+"""
+
+    caminho.write_text(conteudo, encoding="utf-8")
+    return caminho
+
+
+def cmd_farejar_interativo(args: argparse.Namespace) -> None:
+    print("🐀 O que quer que eu fareje hoje?")
+    consulta = input("> ").strip()
+    if not consulta:
+        print("Nenhuma consulta informada.")
+        return
+
+    print("\nFarejando rastros na biblioteca...\n")
+    resultados = buscar_semantica_jsonl(args.embeddings_dir, consulta, args.embedding, args.limite)
+    if not resultados:
+        print("Busca semantica em JSONL indisponivel; usando busca textual em JSONL.")
+        resultados = buscar_textual_jsonl(args.embeddings_dir, consulta, args.limite)
+
+    if not resultados:
+        print("Nenhum resultado encontrado.")
+        return
+
+    print("Rastros encontrados:")
+    for i, row in enumerate(resultados, start=1):
+        print(f"{i}. {row['titulo']} · Parte {row['parte']} · score={row['score']:.4f}")
+
+    print(f"\nChamando {args.modelo_chat} para uma leitura crítica...\n")
+    prompt = montar_prompt_farejada(consulta, resultados)
+    resposta = chamar_qwen(prompt, args.modelo_chat)
+
+    print("\n" + "=" * 72)
+    print(resposta)
+    print("=" * 72 + "\n")
+
+    salvar = input("Guardar esta farejada em uma ficha .md? [s/N] ").strip().lower()
+    if salvar in {"s", "sim", "y", "yes"}:
+        caminho = salvar_farejada(consulta, resposta, resultados, args.pasta_saida)
+        print(f"Ficha salva em: {caminho}")
+    else:
+        print("Farejada não salva.")
+
+
 def imprimir_resultados(resultados: list, campo_score: str = "score") -> None:
     if not resultados:
         print("Nenhum resultado encontrado.")
@@ -357,6 +619,20 @@ def imprimir_resultados(resultados: list, campo_score: str = "score") -> None:
 
 
 def cmd_farejar(args: argparse.Namespace) -> None:
+    if not args.consulta:
+        cmd_farejar_interativo(args)
+        return
+
+    if args.jsonl:
+        if args.embedding:
+            resultados = buscar_semantica_jsonl(args.embeddings_dir, args.consulta, args.embedding, args.limite)
+            if resultados:
+                imprimir_resultados(resultados)
+                return
+            print("Busca semantica em JSONL indisponivel; usando busca textual em JSONL.")
+        imprimir_resultados(buscar_textual_jsonl(args.embeddings_dir, args.consulta, args.limite))
+        return
+
     conn = conectar(args.db)
     if args.embedding:
         resultados = buscar_semantica(conn, args.consulta, args.embedding, args.limite)
@@ -399,9 +675,14 @@ def main() -> None:
     p_indexar.set_defaults(func=cmd_indexar)
 
     p_farejar = sub.add_parser("farejar", help="Fareja rastros na biblioteca")
-    p_farejar.add_argument("consulta")
+    p_farejar.add_argument("consulta", nargs="?", default="")
     p_farejar.add_argument("--limite", type=int, default=8)
-    p_farejar.add_argument("--embedding", default="", help="Modelo de embedding Ollama")
+    p_farejar.add_argument("--embedding", default="bge-m3", help="Modelo de embedding Ollama")
+    p_farejar.add_argument("--modelo-chat", default="qwen2.5:14b", help="Modelo Ollama usado na leitura crítica interativa")
+    p_farejar.add_argument("--pasta-saida", type=Path, default=Path("fichas/farejadas"), help="Pasta para salvar farejadas em Markdown")
+    p_farejar.add_argument("--jsonl", action="store_true", default=True, help="Usa .embeddings/*.jsonl em vez do SQLite")
+    p_farejar.add_argument("--sqlite", dest="jsonl", action="store_false", help="Usa o banco SQLite antigo")
+    p_farejar.add_argument("--embeddings-dir", type=Path, default=EMBEDDINGS_DIR_PADRAO, help="Pasta com arquivos .jsonl de embeddings")
     p_farejar.set_defaults(func=cmd_farejar)
 
     p_aprender = sub.add_parser("aprender", help="Registra uma correcao/preferencia sua")
