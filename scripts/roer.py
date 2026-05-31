@@ -988,19 +988,17 @@ O que o texto torna difícil continuar pensando da mesma maneira, com referênci
 - caso, imagem, tecnologia ou situação, com [Parte N]
 
 **Autores e referências mobilizadas**
-ATENÇÃO: use OBRIGATORIAMENTE a lista [AUTORES] dos METADADOS EXTRAÍDOS acima. Não adicione autores que não estejam nessa lista. Não omita autores que estejam nessa lista.
-- autor ou obra — com [Parte N]
+- autor ou obra, com [Parte N]
 
 **Contribuição para o campo**
 Um parágrafo sobre o que o texto permite compreender, sem extrapolar além das notas, com [Parte N].
 
 **Possíveis relações com minha pesquisa**
-Use SOMENTE as RESSONÂNCIAS CONTROLADAS acima para esta secção. Não use conhecimento externo nem memória conceitual.
-- Hipótese: relação possível identificada nas ressonâncias, com [Parte N]
+- Hipótese: relação possível com matéria, cuidado, precariedade, reparo, manutenção, gesto, técnica ou infraestruturas, com [Parte N]
   GRAU-DE-CONFIANÇA: baixo / médio / alto
 
 **Perguntas ao leitor**
-- pergunta específica e situada, mínimo 3 perguntas
+- pergunta específica e situada
 
 **Riscos de leitura superficial**
 Como o texto poderia ser reduzido ou mal interpretado, com [Parte N].
@@ -1015,12 +1013,6 @@ PALAVRAS-CHAVE-FINAIS:
 termos relevantes separados por vírgula. Exemplo: environment, Umwelt, feedback, collective behavior
 
 ---
-METADADOS EXTRAÍDOS DIRECTAMENTE DAS LEITURAS BRUTAS:
-Use [AUTORES] obrigatoriamente em **Autores e referências mobilizadas**.
-Use [OPERADORES] e [EXEMPLOS] para enriquecer as secções correspondentes.
-{metadados_leituras}
-
----
 NOTAS:
 {leitura_bruta}
 
@@ -1033,65 +1025,14 @@ RESSONÂNCIAS CONTROLADAS:
 {ressonancias}
 
 ---
+MEMÓRIA CONCEITUAL, USAR SOMENTE EM **Possíveis relações com minha pesquisa**:
+{memoria_conceitual}
+
+---
 VIZINHANÇAS SEMÂNTICAS INTERNAS:
 {vizinhancas_semanticas}
 """
 
-
-
-def extrair_metadados_leituras(leituras: list[str]) -> str:
-    """
-    Extrai autores, operadores, termos exógenos e exemplos directamente
-    das leituras brutas, antes de qualquer compressão intermediária.
-    Retorna uma string estruturada para injectar no PROMPT_CONSOLIDAR.
-    """
-    autores: dict[str, list[int]] = {}
-    operadores: dict[str, list[int]] = {}
-    termos: dict[str, list[int]] = {}
-    exemplos: dict[str, list[int]] = {}
-
-    padroes = [
-        ("AUTORES-OBRAS", autores,   r"AUTORES-OBRAS\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
-        ("OPERADORES",    operadores, r"OPERADORES\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
-        ("TERMOS",        termos,     r"TERMOS-EX[ÓO]GENOS\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
-        ("EXEMPLOS",      exemplos,   r"EXEMPLOS\s*:\s*\n(.*?)(?=\n[A-Z][A-Z\-]+:|$)"),
-    ]
-
-    for i, leitura in enumerate(leituras, start=1):
-        for _, destino, padrao in padroes:
-            match = re.search(padrao, leitura, flags=re.DOTALL | re.IGNORECASE)
-            if not match:
-                continue
-            bloco = match.group(1)
-            for linha in bloco.splitlines():
-                item = linha.strip().lstrip("-•*").strip()
-                if not item or len(item) < 3:
-                    continue
-                if "não identificado" in item.lower():
-                    continue
-                chave = re.sub(r"\s+", " ", item.lower()).strip()
-                if chave not in destino:
-                    destino[chave] = []
-                if i not in destino[chave]:
-                    destino[chave].append(i)
-
-    def formatar_secao(titulo: str, dados: dict[str, list[int]]) -> str:
-        if not dados:
-            return f"[{titulo}]: não identificado"
-        itens = sorted(dados.items(), key=lambda x: x[1][0])
-        linhas = [f"[{titulo}]:"]
-        for item, partes in itens:
-            partes_str = ", ".join([f"Parte {p}" for p in partes])
-            linhas.append(f"  - {item} ({partes_str})")
-        return "\n".join(linhas)
-
-    blocos = [
-        formatar_secao("AUTORES", autores),
-        formatar_secao("OPERADORES", operadores),
-        formatar_secao("TERMOS-EXÓGENOS", termos),
-        formatar_secao("EXEMPLOS", exemplos),
-    ]
-    return "\n\n".join(blocos)
 
 GRUPO_MAX_PARTES = 3
 MAX_UNIDADES_FINAIS = 3
@@ -1421,13 +1362,14 @@ def reduzir_leituras_em_rodadas(
 def ficha_valida(ficha: str, total_partes: int = 0) -> bool:
     """Confere se a consolidação obedeceu ao molde mínimo esperado."""
     obrigatorios = [
-        "**Problema principal**",
-        "**Movimentos argumentativos**",
-        "**Por que o autor recorre a esses movimentos**",
-        "**Conceitos, imagens e exemplos operantes**",
-        "**Tese dominante, se houver**",
-        "**Tensões e hesitações**",
-        "**Autores e referências mobilizadas**",
+        "**Tese central**",
+        "**Deslocamento teórico**",
+        "**Conceitos-chave do autor**",
+        "**Operadores centrais**",
+        "**Frases-charneira**",
+        "**Zonas de centralidade instável**",
+        "**Cadeia argumentativa**",
+        "**Tensões estruturantes**",
         "**Possíveis relações com minha pesquisa**",
         "**Perguntas ao leitor**",
         "**Evidências para conferência**",
@@ -1508,15 +1450,13 @@ def consolidar_resumos(
         modelo=modelo,
         nome_arquivo=nome_arquivo,
     )
-    metadados_leituras = extrair_metadados_leituras(leituras)
-
     prompt = PROMPT_CONSOLIDAR.format(
         titulo=titulo,
+        memoria_conceitual=memoria_conceitual,
         leitura_bruta=texto_leitura_bruta,
         estrutura_texto=estrutura_texto,
         ressonancias=ressonancias,
         vizinhancas_semanticas=vizinhancas_semanticas,
-        metadados_leituras=metadados_leituras,
     )
     resposta = chamar_ollama(prompt, modelo, num_predict=5000, num_ctx=16384)
     ficha, palavras_chave = separar_ficha_e_palavras_chave(resposta)
@@ -1524,7 +1464,7 @@ def consolidar_resumos(
     if not ficha_valida(ficha, total_partes=len(leituras)):
         prompt_retry = (
             "A resposta anterior não seguiu o molde. Refaça do zero.\n"
-            "Comece obrigatoriamente com **Tese central** e use todos os títulos pedidos.\n"
+            "Comece obrigatoriamente com **Problema principal** e use todos os títulos pedidos.\n"
             "Não escreva Resumo, Análise, Conclusão, Parte 1, Parte 2 ou títulos com ###.\n\n"
             "Para este texto longo, cite explicitamente partes do início, do meio e do fim.\n"
             "Não concentre a ficha em apenas uma ou duas partes.\n\n"
@@ -1850,6 +1790,7 @@ def processar_documento(caminho: Path, pasta_saida: Path, pasta_leituras: Path,
             modelo_consolidacao or modelo,
             memoria,
             nome_cache,
+            modelo_embedding if gerar_embeddings else "",
         )
 
         todas_kw = list(dict.fromkeys(todas_kw + kw_final))[:12]
@@ -1895,7 +1836,7 @@ def main():
     parser.add_argument("--memoria",  default=str(MEMORIA_PADRAO), help="Arquivo JSON de memória conceitual")
     parser.add_argument("--modelo",   default="qwen2.5:7b", help="Modelo Ollama")
     parser.add_argument("--modelo-consolidacao", default="", help="Modelo Ollama opcional para resumos intermediários e ficha final")
-    parser.add_argument("--modelo-embedding", default="bge-m3", help="Modelo Ollama para embeddings em lote")
+    parser.add_argument("--modelo-embedding", default="nomic-embed-text", help="Modelo Ollama para embeddings em lote")
     parser.add_argument("--embeddings", default=str(EMBEDDINGS_DIR_PADRAO), help="Pasta de saída dos embeddings JSONL")
     parser.add_argument("--sem-embeddings", action="store_true", help="Não gera embeddings antes da consolidação")
     parser.add_argument("--modo", choices=("completo", "indexar", "fichar"), default="completo", help="Etapa do pipeline a executar")
