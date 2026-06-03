@@ -1,0 +1,66 @@
+# ═══════════════════════════════════════════════════════════════
+# ESTRATÉGIA: Rejeitar tudo, permitir apenas arquivos específicos
+# ═══════════════════════════════════════════════════════════════
+
+# REJEITAR TUDO por padrão
+/*
+!/.gitignore
+!/.github/
+
+# Permitir APENAS os arquivos do projeto público
+!/digerir.py
+!/DIGERIR_README.md
+!/IMPLEMENTACAO_DIGERIR.md
+
+# Rejeitar explicitamente dados pessoais
+rato/
+.rato/
+.cache_indexador/
+.continue/
+.embeddings/
+
+# Banco de dados
+*.sqlite
+*.sqlite3
+*.db
+*.db-shm
+*.db-wal
+*-shm
+*-wal
+
+# Documentos acadêmicos (PRIVADO)
+*.md
+!DIGERIR_README.md
+!IMPLEMENTACAO_DIGERIR.md
+
+# Scripts pessoais
+*.sh
+*.py
+!digerir.py
+
+# Pastas com dados
+fichas/
+relacoes/
+leituras-brutas/
+textos\ limpos/
+PDF/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+venv/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
