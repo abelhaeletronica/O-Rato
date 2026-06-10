@@ -13,6 +13,7 @@
 !/rato/scripts/
 !/rato/scripts/digerir.py
 !/rato/scripts/limpar.py
+!/rato/scripts/roer.py
 !/rato/scripts/README.md
 
 # Rejeitar explicitamente dados pessoais
@@ -21,6 +22,7 @@
 /rato/scripts/*
 !/rato/scripts/digerir.py
 !/rato/scripts/limpar.py
+!/rato/scripts/roer.py
 !/rato/scripts/README.md
 /rato/README.md
 .rato/
@@ -47,6 +49,7 @@
 !digerir.py
 !rato/scripts/digerir.py
 !rato/scripts/limpar.py
+!rato/scripts/roer.py
 
 # Pastas com dados
 fichas/
