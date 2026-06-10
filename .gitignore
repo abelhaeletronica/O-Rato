@@ -9,11 +9,20 @@
 
 # Permitir APENAS os arquivos do projeto público
 !/digerir.py
-!/DIGERIR_README.md
-!/IMPLEMENTACAO_DIGERIR.md
+!/rato/
+!/rato/scripts/
+!/rato/scripts/digerir.py
+!/rato/scripts/limpar.py
+!/rato/scripts/README.md
 
 # Rejeitar explicitamente dados pessoais
-rato/
+/rato/*
+!/rato/scripts/
+/rato/scripts/*
+!/rato/scripts/digerir.py
+!/rato/scripts/limpar.py
+!/rato/scripts/README.md
+/rato/README.md
 .rato/
 .cache_indexador/
 .continue/
@@ -30,13 +39,14 @@ rato/
 
 # Documentos acadêmicos (PRIVADO)
 *.md
-!DIGERIR_README.md
-!IMPLEMENTACAO_DIGERIR.md
+!rato/scripts/README.md
 
 # Scripts pessoais
 *.sh
 *.py
 !digerir.py
+!rato/scripts/digerir.py
+!rato/scripts/limpar.py
 
 # Pastas com dados
 fichas/

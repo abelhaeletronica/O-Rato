@@ -12,12 +12,10 @@ import sqlite3
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
-
 import requests
 
 # Configuração de caminhos
-REPO_ROOT = Path(__file__).parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = REPO_ROOT / "rato" / "biblioteca_referencias.sqlite"
 FICHAS_DIR = REPO_ROOT / "fichas"
 DIGESTOES_DIR = FICHAS_DIR / "digestoes"
