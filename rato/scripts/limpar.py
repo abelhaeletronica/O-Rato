@@ -773,7 +773,7 @@ def limpar_com_ollama(texto: str, modelo: str, max_chars: int = 3000, seletivo: 
 def lamber(
     texto: str,
     com_ollama: bool = False,
-    modelo_ollama: str = "qwen2.5:7b",
+    modelo_ollama: str = "qwen3:8b",
     ollama_chars: int = 3000,
     ollama_seletivo: bool = False,
     marcar_duvidas: bool = False,
@@ -911,7 +911,7 @@ def main() -> None:
     grupo_saida.add_argument("--saida", type=Path, help="Ficheiro de saída (só com --arquivo)")
 
     parser.add_argument("--com-ollama", action="store_true", help="Activa limpeza adicional via Ollama")
-    parser.add_argument("--modelo-ollama", default="qwen2.5:7b", help="Modelo Ollama para limpeza")
+    parser.add_argument("--modelo-ollama", default="qwen3:8b", help="Modelo Ollama para limpeza")
     parser.add_argument("--ollama-chars", type=int, default=3000, help="Tamanho máximo de chunk para Ollama")
     parser.add_argument("--ollama-seletivo", action="store_true", help="Envia só blocos suspeitos ao Ollama")
     parser.add_argument("--marcar-duvidas", action="store_true", help="Marca blocos suspeitos com comentário REVISAR OCR")

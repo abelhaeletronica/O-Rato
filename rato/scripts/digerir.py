@@ -22,7 +22,7 @@ DIGESTOES_DIR = FICHAS_DIR / "digestoes"
 
 # Configuração Ollama
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "qwen2.5:14b"
+OLLAMA_MODEL = "qwen3:14b"
 
 
 def carregar_arquivos(caminhos: list[str]) -> str:
@@ -349,7 +349,7 @@ def main() -> None:
     prompt = gerar_prompt_digestao(temas_persistentes, perguntas_orfas, recortes_texto)
 
     # Chama Ollama
-    print("   [4/4] Consultando Ollama qwen2.5:14b...", file=sys.stderr)
+    print("   [4/4] Consultando Ollama qwen3:14b...", file=sys.stderr)
     digestao = chamar_ollama(prompt)
 
     if digestao is None:

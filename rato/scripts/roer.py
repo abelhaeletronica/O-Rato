@@ -4,7 +4,7 @@ Roer — pipeline de fichamento para Obsidian
 ===========================================
 Uso:
     python rato/scripts/roer.py --modo indexar --pasta . --saida fichas
-    python rato/scripts/roer.py --modo completo --pasta . --saida fichas --modelo qwen2.5:7b
+    python rato/scripts/roer.py --modo completo --pasta . --saida fichas --modelo qwen3:8b
 
 Dependências:
     pip install requests pyyaml tqdm
@@ -1269,8 +1269,8 @@ def gerar_leitura_bruta_obsidian(doc: dict, leituras: list[str],
         "chunks-processados": n_chunks,
         "palavras-por-chunk": chunk_words,
         "data-indexacao":   datetime.now().strftime("%Y-%m-%d"),
-        "modelo-ollama":    doc.get("modelo", "qwen2.5:7b"),
-        "modelo-consolidacao": doc.get("modelo_consolidacao", doc.get("modelo", "qwen2.5:7b")),
+        "modelo-ollama":    doc.get("modelo", "qwen3:8b"),
+        "modelo-consolidacao": doc.get("modelo_consolidacao", doc.get("modelo", "qwen3:8b")),
         "modelo-embedding": doc.get("modelo_embedding", ""),
         "revisao-humana":   False,
     }
@@ -1316,8 +1316,8 @@ def gerar_ficha_obsidian(doc: dict, ficha: str, palavras_chave: list[str],
         "chunks-processados": n_chunks,
         "palavras-por-chunk": chunk_words,
         "data-indexacao":   datetime.now().strftime("%Y-%m-%d"),
-        "modelo-ollama":    doc.get("modelo", "qwen2.5:7b"),
-        "modelo-consolidacao": doc.get("modelo_consolidacao", doc.get("modelo", "qwen2.5:7b")),
+        "modelo-ollama":    doc.get("modelo", "qwen3:8b"),
+        "modelo-consolidacao": doc.get("modelo_consolidacao", doc.get("modelo", "qwen3:8b")),
         "modelo-embedding": doc.get("modelo_embedding", ""),
         "revisao-humana":   False,
     }
@@ -1496,8 +1496,8 @@ def main():
     parser.add_argument("--pasta",    required=True,        help="Pasta com os .md de referências")
     parser.add_argument("--saida",    required=True,        help="Pasta de saída das fichas")
     parser.add_argument("--leituras", default="leituras-brutas", help="Pasta de saída das leituras brutas")
-    parser.add_argument("--modelo",   default="qwen2.5:7b", help="Modelo Ollama")
-    parser.add_argument("--modelo-consolidacao", default="", help="Modelo Ollama opcional para resumos intermediários e ficha final")
+    parser.add_argument("--modelo",   default="qwen3:8b", help="Modelo Ollama")
+    parser.add_argument("--modelo-consolidacao", default="qwen3:14b", help="Modelo Ollama opcional para resumos intermediários e ficha final")
     parser.add_argument("--modelo-embedding", default=MODELO_EMBEDDING_PADRAO, help="Modelo Ollama para embeddings em lote")
     parser.add_argument("--embeddings", default=str(EMBEDDINGS_DIR_PADRAO), help="Pasta de saída dos embeddings JSONL")
     parser.add_argument("--sqlite", default=str(SQLITE_BUSCA_PADRAO), help="Banco SQLite FTS para busca textual dos chunks originais")

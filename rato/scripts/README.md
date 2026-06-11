@@ -191,9 +191,8 @@ Modelos usados com mais frequencia:
 
 ```bash
 ollama pull bge-m3
-ollama pull qwen2.5:7b
-ollama pull qwen2.5:14b
 ollama pull qwen3:8b
+ollama pull qwen3:14b
 ```
 
 Uso recomendado:
@@ -201,9 +200,10 @@ Uso recomendado:
 | Etapa | Modelo |
 | --- | --- |
 | Embeddings | `bge-m3` |
-| Leitura bruta | `qwen2.5:7b` |
-| Ficha final / relacoes | `qwen3:8b` |
-| Digestao | `qwen2.5:14b` |
+| Leitura bruta | `qwen3:8b` |
+| Ficha final / consolidacao | `qwen3:14b` |
+| Relacoes | `qwen3:8b` |
+| Digestao | `qwen3:14b` |
 
 ## Notas de Organizacao
 
