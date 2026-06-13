@@ -492,8 +492,10 @@ def menu_farejar() -> None:
             busca,
             "--embedding",
             perguntar("Modelo de embeddings", "bge-m3"),
+            "--modelo-chat",
+            perguntar("Modelo para leitura crítica", "qwen3:14b"),
             "--pasta-saida",
-            perguntar("Pasta para salvar farejadas", "farejadas"),
+            perguntar("Pasta para salvar farejadas", "fichas/farejadas"),
         ]
     elif escolha == "3":
         consulta = perguntar("Consulta conceitual")
