@@ -12,6 +12,7 @@
 !/rato/
 !/rato/scripts/
 !/rato/scripts/digerir.py
+!/rato/scripts/farejar.py
 !/rato/scripts/limpar.py
 !/rato/scripts/roer.py
 !/rato/scripts/rato.sh
@@ -23,6 +24,7 @@
 !/rato/scripts/
 /rato/scripts/*
 !/rato/scripts/digerir.py
+!/rato/scripts/farejar.py
 !/rato/scripts/limpar.py
 !/rato/scripts/roer.py
 !/rato/scripts/rato.sh
@@ -52,6 +54,7 @@
 *.py
 !digerir.py
 !rato/scripts/digerir.py
+!rato/scripts/farejar.py
 !rato/scripts/limpar.py
 !rato/scripts/roer.py
 !rato/scripts/rato.sh

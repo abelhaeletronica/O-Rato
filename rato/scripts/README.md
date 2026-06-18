@@ -20,10 +20,7 @@ python3 rato/scripts/farejar.py indexar --pasta . --embedding bge-m3
 # 5. Buscar rastros
 python3 rato/scripts/farejar.py farejar "cuidado materia gesto" --busca hibrida
 
-# 6. Tecer relacoes entre trechos semanticamente proximos
-python3 rato/scripts/farejar.py tecer "cuidado como manutencao material"
-
-# 7. Digerir tensoes recentes da biblioteca
+# 6. Digerir tensoes recentes da biblioteca
 python3 rato/scripts/digerir.py --dias 30 --salvar
 ```
 
@@ -110,7 +107,7 @@ Saidas comuns:
 
 ### `farejar.py`
 
-Indexa a biblioteca local, busca rastros e tece relacoes.
+Indexa a biblioteca local, busca rastros, levanta hipoteses e avalia relacoes.
 
 ```bash
 python3 rato/scripts/farejar.py indexar --pasta . --embedding bge-m3
@@ -119,12 +116,9 @@ python3 rato/scripts/farejar.py farejar "argila cuidado" --busca palavras
 python3 rato/scripts/farejar.py farejar "gesto material" --busca hibrida
 ```
 
-Subcomando `tecer`, incorporado do antigo `tecer.py`:
-
-```bash
-python3 rato/scripts/farejar.py tecer "cuidado como manutencao material"
-python3 rato/scripts/farejar.py tecer "gestos humanos cinema movimento" --somente-busca
-```
+As farejadas salvas em `fichas/farejadas/` incluem duas camadas:
+- `Hipoteses`: mapa dos rastros, pergunta emergente e resposta provisoria.
+- `Avaliando relacoes`: comparacao dos rastros, tensoes, riscos de forcar relacoes e perguntas geradas.
 
 Padrao atual de embeddings: `bge-m3`.
 
@@ -182,7 +176,6 @@ Estes nomes antigos nao devem mais ser usados:
 - `limpar_pdf.py`: incorporado em `limpar.py`.
 - `limpar_pdf2.py`: incorporado em `limpar.py`.
 - `converter_notas.py`: incorporado em `limpar.py --converter-notas`.
-- `tecer.py`: funcionalidade principal incorporada em `farejar.py tecer`.
 - `digerir2.py`: consolidado em `digerir.py`.
 
 ## Modelos
@@ -202,7 +195,7 @@ Uso recomendado:
 | Embeddings | `bge-m3` |
 | Leitura bruta | `qwen3:8b` |
 | Ficha final / consolidacao | `qwen3:14b` |
-| Relacoes | `qwen3:8b` |
+| Farejar / relacoes | `qwen3:8b` |
 | Digestao | `qwen3:14b` |
 
 ## Notas de Organizacao

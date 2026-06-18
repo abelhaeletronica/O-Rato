@@ -22,6 +22,7 @@ console = Console()
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parents[1]
 PYTHON = sys.executable or "python3"
+TEXTOS_PADRAO = "textos limpos"
 
 
 RATO_ASCII = r"""
@@ -174,6 +175,17 @@ def caminho_para_comando(path: Path) -> str:
         return str(path)
 
 
+def markdown_convertido_para(entrada: str, saida: str) -> str:
+    """Retorna o alvo de limpeza esperado depois de converter PDF(s)."""
+    from converter import slug
+
+    entrada_path = caminho_no_projeto(entrada)
+    saida_path = caminho_no_projeto(saida)
+    if entrada_path.suffix.lower() == ".pdf":
+        return caminho_para_comando(saida_path / f"{slug(entrada_path.stem)}.md")
+    return caminho_para_comando(saida_path)
+
+
 def selecionar_com_setas(titulo: str, itens: list[str]) -> Optional[int]:
     if not sys.stdin.isatty() or not sys.stdout.isatty():
         return -1
@@ -324,7 +336,7 @@ def menu_cacar() -> None:
     if escolha == "2":
         alvo = selecionar_alvo_em_pasta(
             "Escolha Markdown para limpar",
-            ".",
+            TEXTOS_PADRAO,
             (".md",),
             "(processar todos os Markdown da pasta)",
             "Arquivo Markdown ou pasta",
@@ -345,7 +357,7 @@ def menu_cacar() -> None:
     if escolha == "3":
         alvo = selecionar_alvo_em_pasta(
             "Escolha Markdown para catalogar",
-            ".",
+            TEXTOS_PADRAO,
             (".md",),
             "(processar todos os Markdown da pasta)",
             "Arquivo Markdown ou pasta",
@@ -375,15 +387,8 @@ def menu_cacar() -> None:
     adicionar_flag(converter, "Forçar reconversão se o Markdown já existir?", "--forcar")
     adicionar_flag(converter, "Permitir OCR do Docling?", "--com-ocr")
     if rodar(converter) == 0:
-        alvo_limpeza = selecionar_alvo_em_pasta(
-            "Escolha Markdown para limpar e catalogar",
-            saida,
-            (".md",),
-            "(processar todos os Markdown da pasta)",
-            "Arquivo/pasta Markdown para limpar",
-        )
-        if not alvo_limpeza:
-            return
+        alvo_limpeza = markdown_convertido_para(entrada, saida)
+        console.print(f"\n[dim]Markdown para limpar/catalogar: {alvo_limpeza}[/dim]")
         if Path(alvo_limpeza).suffix.lower() == ".md":
             limpar = [PYTHON, script("limpar.py"), alvo_limpeza]
         else:
@@ -414,7 +419,7 @@ def menu_roer() -> None:
             "\n[dim]O modo indexar gera/atualiza leituras brutas, SQLite e embeddings, "
             "mas não cria ficha final.[/dim]\n"
         )
-    pasta = perguntar("Pasta com referências Markdown", ".")
+    pasta = perguntar("Pasta com referências Markdown", TEXTOS_PADRAO)
     saida = perguntar("Pasta de saída das fichas", "fichas")
     args = [
         PYTHON,
@@ -457,10 +462,9 @@ def menu_farejar() -> None:
         "Ação",
         {
             "1": "Indexar biblioteca",
-            "2": "Buscar rastros",
-            "3": "Tecer relações",
-            "4": "Registrar aprendizado",
-            "5": "Listar aprendizados",
+            "2": "Buscar rastros e avaliar relações",
+            "3": "Registrar aprendizado",
+            "4": "Listar aprendizados",
         },
         "2",
     )
@@ -470,7 +474,7 @@ def menu_farejar() -> None:
             script("farejar.py"),
             "indexar",
             "--pasta",
-            perguntar("Pasta com Markdown", "."),
+            perguntar("Pasta com Markdown", TEXTOS_PADRAO),
             "--embedding",
             perguntar("Modelo de embeddings", "bge-m3"),
         ]
@@ -493,28 +497,13 @@ def menu_farejar() -> None:
             "--embedding",
             perguntar("Modelo de embeddings", "bge-m3"),
             "--modelo-chat",
-            perguntar("Modelo para leitura crítica", "qwen3:14b"),
+            perguntar("Modelo para hipóteses", "qwen3:8b"),
+            "--modelo-relacoes",
+            perguntar("Modelo para avaliar relações", "qwen3:8b"),
             "--pasta-saida",
             perguntar("Pasta para salvar farejadas", "fichas/farejadas"),
         ]
     elif escolha == "3":
-        consulta = perguntar("Consulta conceitual")
-        if not consulta:
-            return
-        args = [
-            PYTHON,
-            script("farejar.py"),
-            "tecer",
-            consulta,
-            "--embedding",
-            perguntar("Modelo de embeddings", "bge-m3"),
-            "--modelo",
-            perguntar("Modelo para tecer", "qwen3:8b"),
-            "--pasta-saida",
-            perguntar("Pasta para salvar relações", "relacoes"),
-        ]
-        adicionar_flag(args, "Somente buscar vizinhos, sem chamar LLM?", "--somente-busca")
-    elif escolha == "4":
         texto = perguntar("Aprendizado/correção")
         if not texto:
             return
@@ -524,7 +513,7 @@ def menu_farejar() -> None:
             args.extend(["--tags", *tags.split()])
     else:
         args = [PYTHON, script("farejar.py"), "aprendizados"]
-    rodar(args, confirmar_antes=escolha != "5")
+    rodar(args, confirmar_antes=escolha != "4")
 
 
 def menu_digerir() -> None:
@@ -554,6 +543,7 @@ def menu_toca() -> None:
     tabela.add_column("Existe?")
     for caminho in [
         "PDF",
+        TEXTOS_PADRAO,
         "fichas",
         "leituras-brutas",
         ".embeddings",
@@ -572,7 +562,7 @@ def menu() -> None:
         tabela = Table(show_header=False, box=None)
         tabela.add_row("[1]", "[bold]CAÇAR[/bold]", "converter · limpar · catalogar")
         tabela.add_row("[2]", "[bold]ROER[/bold]", "leituras · embeddings · fichas")
-        tabela.add_row("[3]", "[bold]FAREJAR[/bold]", "indexar · buscar · tecer · aprender")
+        tabela.add_row("[3]", "[bold]FAREJAR[/bold]", "indexar · buscar · avaliar relações · aprender")
         tabela.add_row("[4]", "[bold]DIGERIR[/bold]", "tensões · perguntas · pontos cegos")
         tabela.add_row("[5]", "[bold]TOCA[/bold]", "estado da biblioteca")
         tabela.add_row("[0]", "SAIR", "")
