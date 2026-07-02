@@ -6,6 +6,7 @@ Menu interativo para os scripts operacionais em rato/scripts.
 
 from __future__ import annotations
 
+import re
 import shlex
 import subprocess
 import sys
@@ -303,6 +304,80 @@ def selecionar_alvo_em_pasta(
     return caminho_para_comando(arquivos[indice - 1])
 
 
+def selecionar_arquivo_em_pasta(
+    titulo: str,
+    pasta_padrao: str,
+    extensoes: tuple[str, ...],
+    prompt_manual: str,
+) -> Optional[str]:
+    pasta = perguntar("Pasta para listar", pasta_padrao)
+    arquivos = arquivos_com_extensao(pasta, extensoes)
+    if not arquivos:
+        console.print("[yellow]Não encontrei arquivos compatíveis nessa pasta.[/yellow]")
+        return perguntar(prompt_manual)
+
+    itens = [path.name for path in arquivos]
+    indice = selecionar_com_setas(titulo, itens)
+    if indice is None:
+        return None
+    if indice == -1:
+        console.print(f"\n[bold]{titulo}[/bold]")
+        for numero, item in enumerate(itens, start=1):
+            console.print(f"  [{numero}] {item}")
+        while True:
+            escolha = perguntar("Número", "1")
+            if escolha.isdigit() and 1 <= int(escolha) <= len(itens):
+                indice = int(escolha) - 1
+                break
+            console.print("[red]Número inválido.[/red]")
+
+    return caminho_para_comando(arquivos[indice])
+
+
+def chave_costura(path: Path) -> Optional[str]:
+    match = re.match(r"^costura_\d{4}-\d{2}-\d{2}_(.+)\.md$", path.name)
+    if not match:
+        return None
+    return match.group(1)
+
+
+def selecionar_grupo_costuras() -> Optional[list[str]]:
+    costuras = arquivos_markdown("fichas/costuras")
+    grupos: dict[str, list[Path]] = {}
+    for path in costuras:
+        chave = chave_costura(path)
+        if chave is None:
+            continue
+        grupos.setdefault(chave, []).append(path)
+
+    if not grupos:
+        console.print("[yellow]Não encontrei costuras agrupáveis em fichas/costuras.[/yellow]")
+        arquivos = perguntar("Arquivos de costura separados por espaço")
+        return shlex.split(arquivos) if arquivos else None
+
+    chaves = sorted(grupos, key=str.lower)
+    itens = [
+        f"{chave} ({len(grupos[chave])} costura(s))"
+        for chave in chaves
+    ]
+    indice = selecionar_com_setas("Escolha o conjunto de costuras", itens)
+    if indice is None:
+        return None
+    if indice == -1:
+        console.print("\n[bold]Conjuntos de costuras[/bold]")
+        for numero, item in enumerate(itens, start=1):
+            console.print(f"  [{numero}] {item}")
+        while True:
+            escolha = perguntar("Número", "1")
+            if escolha.isdigit() and 1 <= int(escolha) <= len(itens):
+                indice = int(escolha) - 1
+                break
+            console.print("[red]Número inválido.[/red]")
+
+    selecionadas = sorted(grupos[chaves[indice]], key=lambda path: path.name)
+    return [caminho_para_comando(path) for path in selecionadas]
+
+
 def menu_cacar() -> None:
     cabecalho("CAÇAR")
     console.print("Converter, limpar e catalogar PDFs ou Markdown.\n")
@@ -311,8 +386,11 @@ def menu_cacar() -> None:
         "2": "Limpar Markdown",
         "3": "Catalogar Markdown/pasta",
         "4": "Converter PDF e limpar/catalogar o Markdown depois",
+        "0": "Voltar ao menu principal",
     }
     escolha = escolher("Etapa", opcoes, "4")
+    if escolha == "0":
+        return
 
     if escolha == "1":
         entrada = selecionar_alvo_em_pasta(
@@ -405,9 +483,12 @@ def menu_roer() -> None:
             "completo": "Leituras, embeddings, SQLite e fichas",
             "indexar": "Embeddings e SQLite",
             "fichar": "Ficha interpretativa",
+            "voltar": "Voltar ao menu principal",
         },
         "completo",
     )
+    if modo == "voltar":
+        return
     if modo == "fichar":
         console.print(
             "\n[yellow]Aviso:[/yellow] o modo fichar usa uma leitura bruta já existente "
@@ -465,9 +546,12 @@ def menu_farejar() -> None:
             "2": "Buscar rastros e avaliar relações",
             "3": "Registrar aprendizado",
             "4": "Listar aprendizados",
+            "0": "Voltar ao menu principal",
         },
         "2",
     )
+    if escolha == "0":
+        return
     if escolha == "1":
         args = [
             PYTHON,
@@ -520,11 +604,72 @@ def menu_digerir() -> None:
     cabecalho("DIGERIR")
     args = [PYTHON, script("digerir.py")]
     modo = escolher(
-        "Fonte",
-        {"1": "Chunks recentes do banco", "2": "Arquivos Markdown escolhidos"},
+        "Modo",
+        {
+            "1": "Digestão",
+            "2": "Costura",
+            "3": "Comparar costuras",
+            "0": "Voltar ao menu principal",
+        },
         "1",
     )
-    if modo == "1":
+    if modo == "0":
+        return
+
+    if modo == "2":
+        args.extend(["--modo", "costura"])
+        arquivo = selecionar_arquivo_em_pasta(
+            "Escolha a ficha para costurar",
+            "fichas",
+            (".md",),
+            "Arquivo Markdown para costurar",
+        )
+        if not arquivo:
+            return
+        args.extend(["--arquivos", arquivo])
+        adicionar_flag(args, "Salvar costura em fichas/costuras?", "--salvar", True)
+        rodar(args)
+        return
+
+    if modo == "3":
+        args.extend(["--modo", "comparar-costuras"])
+        selecao = escolher(
+            "Seleção",
+            {
+                "1": "Escolher conjunto pelo nome da ficha",
+                "2": "Digitar arquivos manualmente",
+                "0": "Voltar ao menu principal",
+            },
+            "1",
+        )
+        if selecao == "0":
+            return
+        if selecao == "1":
+            arquivos_lista = selecionar_grupo_costuras()
+            if not arquivos_lista:
+                return
+        else:
+            arquivos = perguntar("Arquivos de costura separados por espaço")
+            if not arquivos:
+                return
+            arquivos_lista = shlex.split(arquivos)
+        args.extend(["--arquivos", *arquivos_lista])
+        adicionar_flag(args, "Salvar comparação em fichas/costuras?", "--salvar", True)
+        rodar(args)
+        return
+
+    fonte = escolher(
+        "Fonte",
+        {
+            "1": "Chunks recentes do banco",
+            "2": "Arquivos Markdown escolhidos",
+            "0": "Voltar ao menu principal",
+        },
+        "1",
+    )
+    if fonte == "0":
+        return
+    if fonte == "1":
         args.extend(["--dias", perguntar("Dias retroativos", "30")])
     else:
         arquivos = perguntar("Arquivos Markdown separados por espaço")

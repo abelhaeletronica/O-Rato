@@ -19,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = REPO_ROOT / "rato" / "biblioteca_referencias.sqlite"
 FICHAS_DIR = REPO_ROOT / "fichas"
 DIGESTOES_DIR = FICHAS_DIR / "digestoes"
+COSTURAS_DIR = FICHAS_DIR / "costuras"
 
 # Configuração Ollama
 OLLAMA_API_URL = "http://localhost:11434/api/generate"
@@ -246,6 +247,202 @@ Aponte qual pergunta ou angústia conceitual insiste em reaparecer sob nomes dif
 Que hipótese ou certeza do pesquisador (sobre o reparo, a matéria, as vivências subjetivas) está sendo silenciosamente contradita ou fraturada pelos próprios textos e pela contingência da matéria aqui reunidos?"""
 
 
+def gerar_prompt_costura(
+    temas_persistentes: str,
+    perguntas_orfas: str,
+    recortes_texto: str,
+) -> str:
+    """
+    Monta o prompt para o Ollama em modo Costura.
+    """
+    return f"""Você é o Rato, operando no modo COSTURA.
+Você NÃO é um resumidor.
+
+Você é um pesquisador que acaba de incorporar um novo texto à sua biblioteca.
+Seu trabalho é registrar o efeito dessa leitura sobre a pesquisa.
+Pense como alguém que escreve um diário intelectual.
+
+A pergunta central é:
+"O que mudou depois desta leitura?"
+
+Não responda:
+"Com o que este texto se parece?"
+
+A Costura deve registrar o encontro entre um texto e uma pesquisa.
+Ela não deve produzir um resumo do artigo.
+
+REGRAS DE INTERPRETAÇÃO:
+- Nunca tente relacionar o texto com toda a biblioteca.
+- Prefira poucas relações, mas profundamente justificadas.
+- É melhor registrar três relações fortes do que quinze aproximações superficiais.
+- Nunca estabeleça relações apenas por coincidência de palavras.
+- Toda aproximação deve ser filosoficamente justificável.
+- Sempre explique por que uma relação existe.
+- Se não existir relação suficiente, diga explicitamente que ela ainda não apareceu.
+- Evite listas extensas de conceitos.
+- Priorize deslocamentos conceituais.
+- Não invente relações.
+- Não conecte automaticamente todos os eixos da biblioteca.
+- Evite linguagem burocrática.
+- Prefira parágrafos curtos.
+- Sempre privilegie qualidade interpretativa em vez de quantidade.
+- Escreva como um pesquisador registrando um deslocamento intelectual.
+
+---
+SINAIS DA BIBLIOTECA, APENAS COMO CONTEXTO:
+
+Temas persistentes já detectados:
+{temas_persistentes}
+
+Perguntas órfãs ou recorrentes:
+{perguntas_orfas}
+---
+
+NOVO TEXTO A INCORPORAR:
+{recortes_texto}
+
+Use os sinais da biblioteca apenas quando houver relação forte com o novo texto.
+Não use esses sinais como lista obrigatória de eixos a conectar.
+
+Gere a costura exatamente com a estrutura abaixo:
+
+## O que este texto muda?
+Explique em um pequeno texto qual deslocamento intelectual este artigo provoca.
+Qual pergunta passa a ser mais importante depois da leitura?
+Não resuma o artigo.
+Descreva a reorganização produzida pela leitura.
+
+---
+
+## Ressonâncias
+Liste apenas entre 3 e 5 autores, conceitos ou fichas da biblioteca que passam a ser vistos de outra maneira.
+
+Para cada item explique:
+- por que houve ressonância;
+- o que mudou na leitura desses autores.
+
+Não use similaridade superficial.
+
+---
+
+## Tensões
+Quais problemas permanecem abertos?
+O que o artigo não resolve?
+Onde ele encontra seus próprios limites?
+Se possível formule essas tensões como perguntas de pesquisa.
+
+---
+
+## Contribuição para a pesquisa
+Explique por que este texto merece continuar na biblioteca.
+Que contribuição específica ele oferece ao projeto?
+Evite frases genéricas.
+
+---
+
+## Grau de perturbação
+Avalie de ★☆☆☆☆ até ★★★★★.
+Não significa qualidade do artigo.
+Significa quanto este texto reorganizou a pesquisa.
+Justifique em poucas linhas.
+
+---
+
+## Vestígio
+Finalize com apenas uma frase.
+Essa frase deve responder:
+"Se daqui a dois anos eu esquecer este artigo, o que não posso esquecer sobre ele?"
+
+Essa frase deve ser memorável.
+Não faça um slogan.
+Não faça um resumo.
+Registre apenas o principal vestígio intelectual deixado pela leitura."""
+
+
+def gerar_prompt_comparacao_costuras(costuras_texto: str) -> str:
+    """
+    Monta o prompt para comparar costuras de um mesmo artigo ao longo do tempo.
+    """
+    return f"""Você é o Rato, operando no modo COMPARAR COSTURAS.
+
+Você não está comparando versões de um artigo.
+Você está comparando versões de um pesquisador.
+Seu trabalho é reconstruir a evolução da pesquisa.
+
+O artigo permaneceu o mesmo.
+Quem mudou foi o pesquisador.
+
+Nunca diga apenas que "uma versão acrescentou detalhes".
+Procure deslocamentos conceituais.
+Observe mudanças de perguntas.
+Observe mudanças de interesses.
+Observe mudanças de problemas.
+Observe mudanças de linguagem.
+Observe mudanças de prioridades.
+
+REGRAS:
+- Nunca compare a qualidade das costuras.
+- Nunca julgue versões antigas.
+- Toda interpretação deve considerar que a mudança pode representar amadurecimento da pesquisa.
+- Evite frases genéricas.
+- Valorize mudanças de perguntas mais do que mudanças de respostas.
+- Escreva como um pesquisador reconstruindo sua própria trajetória intelectual.
+- Não interprete o artigo diretamente; interprete a evolução das leituras.
+
+---
+COSTURAS A COMPARAR:
+{costuras_texto}
+---
+
+Gere a comparação exatamente com a estrutura abaixo:
+
+# Trajetória interpretativa
+Descreva como a leitura evoluiu ao longo do tempo.
+Não faça uma lista cronológica.
+Conte uma pequena história intelectual.
+
+---
+
+# Permanências
+Quais ideias permaneceram constantes em todas as costuras?
+O que nunca deixou de ser importante?
+
+---
+
+# Deslocamentos
+Quais conceitos perderam importância?
+Quais conceitos ganharam importância?
+Quais perguntas desapareceram?
+Quais perguntas surgiram?
+
+---
+
+# Momentos de inflexão
+Houve alguma mudança significativa de direção?
+Identifique os momentos em que a interpretação mudou.
+Explique por quê.
+
+---
+
+# Evolução da pesquisa
+O que essa sequência revela sobre a evolução da pesquisa?
+Não apenas sobre o artigo.
+
+---
+
+# Próximo passo
+Qual parece ser a próxima pergunta natural da pesquisa?
+
+---
+
+# Vestígio da trajetória
+Escreva um pequeno parágrafo respondendo:
+"O que mudou em mim depois de reler este texto tantas vezes?"
+
+Não responda como um resumo.
+Responda como um diário intelectual."""
+
+
 def chamar_ollama(prompt: str) -> str | None:
     """
     Faz requisição POST síncrona para Ollama.
@@ -292,6 +489,64 @@ def salvar_digestao(conteudo: str) -> Path:
 titulo: "Digestão: {data_hoje}"
 tipo: digestao
 data: "{data_hoje}"
+modo: digestao
+modelo: {OLLAMA_MODEL}
+---
+
+"""
+
+    arquivo.write_text(frontmatter + conteudo, encoding="utf-8")
+    return arquivo
+
+
+def salvar_costura(conteudo: str, arquivos: list[str]) -> Path:
+    """
+    Salva a costura em fichas/costuras/costura_AAAA-MM-DD_stem.md
+    com frontmatter apropriado.
+    """
+    COSTURAS_DIR.mkdir(parents=True, exist_ok=True)
+
+    data_hoje = datetime.now().strftime("%Y-%m-%d")
+    sufixo = f"_{Path(arquivos[0]).stem}" if arquivos else ""
+    arquivo = COSTURAS_DIR / f"costura_{data_hoje}{sufixo}.md"
+
+    titulo = f"Costura: {data_hoje}"
+    if arquivos:
+        titulo = f"{titulo} - {Path(arquivos[0]).stem}"
+
+    frontmatter = f"""---
+titulo: "{titulo}"
+tipo: costura
+data: "{data_hoje}"
+modo: costura
+modelo: {OLLAMA_MODEL}
+---
+
+"""
+
+    arquivo.write_text(frontmatter + conteudo, encoding="utf-8")
+    return arquivo
+
+
+def salvar_comparacao_costuras(conteudo: str, arquivos: list[str]) -> Path:
+    """
+    Salva a comparação de costuras em fichas/costuras/.
+    """
+    COSTURAS_DIR.mkdir(parents=True, exist_ok=True)
+
+    data_hoje = datetime.now().strftime("%Y-%m-%d")
+    sufixo = f"_{Path(arquivos[0]).stem}" if arquivos else ""
+    arquivo = COSTURAS_DIR / f"comparacao-costuras_{data_hoje}{sufixo}.md"
+
+    titulo = f"Comparação de costuras: {data_hoje}"
+    if arquivos:
+        titulo = f"{titulo} - {Path(arquivos[0]).stem}"
+
+    frontmatter = f"""---
+titulo: "{titulo}"
+tipo: comparacao-costuras
+data: "{data_hoje}"
+modo: comparar-costuras
 modelo: {OLLAMA_MODEL}
 ---
 
@@ -303,10 +558,19 @@ modelo: {OLLAMA_MODEL}
 
 def main() -> None:
     """
-    Orquestra o fluxo completo de digestão.
+    Orquestra o fluxo completo de digestão, costura ou comparação de costuras.
     """
     parser = argparse.ArgumentParser(
-        description="Rato em modo Digestão: identifica tensões e opacidades."
+        description="Rato em modo Digestão, Costura ou Comparação de Costuras."
+    )
+    parser.add_argument(
+        "--modo",
+        choices=["digestao", "costura", "comparar-costuras"],
+        default="digestao",
+        help=(
+            "Modo de operação: digestao, costura ou comparar-costuras "
+            "(padrão: digestao)"
+        ),
     )
     parser.add_argument(
         "--arquivos",
@@ -323,12 +587,48 @@ def main() -> None:
     parser.add_argument(
         "--salvar",
         action="store_true",
-        help="Salvar resultado em fichas/digestoes/",
+        help="Salvar resultado em fichas/digestoes/ ou fichas/costuras/",
     )
 
     args = parser.parse_args()
 
-    print("🐭 Rato em Modo Digestão...", file=sys.stderr)
+    if args.modo == "comparar-costuras" and not args.arquivos:
+        parser.error("--modo comparar-costuras exige --arquivos")
+
+    if args.modo == "comparar-costuras":
+        print("🧵 Rato em Modo Comparar Costuras...", file=sys.stderr)
+    elif args.modo == "costura":
+        print("🧵 Rato em Modo Costura...", file=sys.stderr)
+        if not args.arquivos:
+            print(
+                "⚠ Aviso: modo costura funciona melhor com --arquivos",
+                file=sys.stderr,
+            )
+    else:
+        print("🐭 Rato em Modo Digestão...", file=sys.stderr)
+
+    if args.modo == "comparar-costuras":
+        print("   [1/3] Carregando costuras...", file=sys.stderr)
+        recortes_texto = carregar_arquivos(args.arquivos)
+
+        print("   [2/3] Montando comparação interpretativa...", file=sys.stderr)
+        prompt = gerar_prompt_comparacao_costuras(recortes_texto)
+
+        print("   [3/3] Consultando Ollama qwen3:14b...", file=sys.stderr)
+        resultado = chamar_ollama(prompt)
+
+        if resultado is None:
+            sys.exit(1)
+
+        if args.salvar:
+            arquivo = salvar_comparacao_costuras(resultado, args.arquivos)
+            print(f"\n✓ Comparação de costuras salva em: {arquivo}", file=sys.stderr)
+        else:
+            delim = "═" * 80
+            print(f"\n{delim}")
+            print(resultado)
+            print(f"{delim}\n")
+        return
 
     # Extrai temas e perguntas (sempre)
     print("   [1/4] Minerando temas persistentes...", file=sys.stderr)
@@ -346,24 +646,39 @@ def main() -> None:
         recortes_texto = extrair_recortes_ponto_cego(args.dias)
 
     # Monta prompt
-    prompt = gerar_prompt_digestao(temas_persistentes, perguntas_orfas, recortes_texto)
+    if args.modo == "costura":
+        prompt = gerar_prompt_costura(
+            temas_persistentes,
+            perguntas_orfas,
+            recortes_texto,
+        )
+    else:
+        prompt = gerar_prompt_digestao(
+            temas_persistentes,
+            perguntas_orfas,
+            recortes_texto,
+        )
 
     # Chama Ollama
     print("   [4/4] Consultando Ollama qwen3:14b...", file=sys.stderr)
-    digestao = chamar_ollama(prompt)
+    resultado = chamar_ollama(prompt)
 
-    if digestao is None:
+    if resultado is None:
         sys.exit(1)
 
     # Output e salvamento
     if args.salvar:
-        arquivo = salvar_digestao(digestao)
-        print(f"\n✓ Digestão salva em: {arquivo}", file=sys.stderr)
+        if args.modo == "costura":
+            arquivo = salvar_costura(resultado, args.arquivos)
+            print(f"\n✓ Costura salva em: {arquivo}", file=sys.stderr)
+        else:
+            arquivo = salvar_digestao(resultado)
+            print(f"\n✓ Digestão salva em: {arquivo}", file=sys.stderr)
     else:
         # Print com delimitadores
         delim = "═" * 80
         print(f"\n{delim}")
-        print(digestao)
+        print(resultado)
         print(f"{delim}\n")
 
 
