@@ -537,6 +537,31 @@ def menu_roer() -> None:
     rodar(args)
 
 
+def menu_escavar() -> None:
+    cabecalho("ESCAVAR")
+    console.print("Ler condições da abstração a partir de uma leitura bruta.\n")
+    leitura = selecionar_arquivo_em_pasta(
+        "Escolha a leitura bruta para escavar",
+        "leituras-brutas",
+        (".md",),
+        "Arquivo LEITURA_*.md",
+    )
+    if not leitura:
+        return
+    args = [
+        PYTHON,
+        script("escavar.py"),
+        "--leitura",
+        leitura,
+        "--saida",
+        perguntar("Pasta de saída das escavações", "escavacoes"),
+        "--modelo",
+        perguntar("Modelo", "qwen3:14b"),
+    ]
+    adicionar_flag(args, "Sobrescrever escavação existente?", "--forcar")
+    rodar(args)
+
+
 def menu_farejar() -> None:
     cabecalho("FAREJAR")
     escolha = escolher(
@@ -690,6 +715,7 @@ def menu_toca() -> None:
         "PDF",
         TEXTOS_PADRAO,
         "fichas",
+        "escavacoes",
         "leituras-brutas",
         ".embeddings",
         "biblioteca.sqlite",
@@ -707,9 +733,10 @@ def menu() -> None:
         tabela = Table(show_header=False, box=None)
         tabela.add_row("[1]", "[bold]CAÇAR[/bold]", "converter · limpar · catalogar")
         tabela.add_row("[2]", "[bold]ROER[/bold]", "leituras · embeddings · fichas")
-        tabela.add_row("[3]", "[bold]FAREJAR[/bold]", "indexar · buscar · avaliar relações · aprender")
-        tabela.add_row("[4]", "[bold]DIGERIR[/bold]", "tensões · perguntas · pontos cegos")
-        tabela.add_row("[5]", "[bold]TOCA[/bold]", "estado da biblioteca")
+        tabela.add_row("[3]", "[bold]ESCAVAR[/bold]", "condições da abstração · experimentos")
+        tabela.add_row("[4]", "[bold]FAREJAR[/bold]", "indexar · buscar · avaliar relações · aprender")
+        tabela.add_row("[5]", "[bold]DIGERIR[/bold]", "tensões · perguntas · pontos cegos")
+        tabela.add_row("[6]", "[bold]TOCA[/bold]", "estado da biblioteca")
         tabela.add_row("[0]", "SAIR", "")
         console.print(tabela)
 
@@ -719,10 +746,12 @@ def menu() -> None:
         elif escolha == "2":
             menu_roer()
         elif escolha == "3":
-            menu_farejar()
+            menu_escavar()
         elif escolha == "4":
-            menu_digerir()
+            menu_farejar()
         elif escolha == "5":
+            menu_digerir()
+        elif escolha == "6":
             menu_toca()
         elif escolha == "0":
             console.print("\n[green]O rato volta para a toca.[/green]")
